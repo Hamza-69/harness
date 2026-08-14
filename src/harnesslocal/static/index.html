@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harness</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: #000;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        /* ── Nav ── */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: #000;
+            border-bottom: 1px solid #1a1a1a;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            height: 48px;
+            gap: 32px;
+        }
+
+        .logo {
+            font-weight: 600;
+            font-size: 14px;
+            color: #fff;
+            letter-spacing: -0.02em;
+            margin-right: 8px;
+        }
+
+        .nav-tabs { display: flex; gap: 0; height: 100%; }
+
+        .nav-tab {
+            background: none;
+            border: none;
+            color: #666;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 0 16px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-bottom: 2px solid transparent;
+            transition: color 0.15s;
+        }
+
+        .nav-tab:hover { color: #999; }
+        .nav-tab.active { color: #fff; border-bottom-color: #fff; }
+
+        .count {
+            background: #fff;
+            color: #000;
+            font-size: 11px;
+            font-weight: 600;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 9px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+        }
+
+        .count.visible { display: flex; }
+
+        /* ── Content ── */
+        .page {
+            display: none;
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 32px 24px 64px;
+        }
+
+        .page.active { display: block; }
+
+        .page-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 24px;
+        }
+
+        /* ── Approval Cards ── */
+        .approval-card {
+            border: 1px solid #1a1a1a;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            animation: slideIn 0.2s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card-top {
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-tool {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 500;
+            color: #fff;
+            background: #1a1a1a;
+            padding: 3px 10px;
+            border-radius: 4px;
+        }
+
+        .card-ws {
+            font-size: 12px;
+            color: #555;
+            font-family: 'JetBrains Mono', monospace;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .card-body {
+            border-top: 1px solid #111;
+        }
+
+        .card-body pre {
+            margin: 0;
+            padding: 16px;
+            background: #0a0a0a;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #999;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .diff-del { color: #f87171; }
+        .diff-add { color: #4ade80; }
+        .diff-file { color: #666; margin-bottom: 4px; display: block; }
+
+        .card-actions {
+            display: flex;
+            border-top: 1px solid #111;
+        }
+
+        .card-actions button {
+            flex: 1;
+            border: none;
+            background: none;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 12px;
+            transition: background 0.15s;
+        }
+
+        .btn-decline {
+            color: #666;
+            border-right: 1px solid #111;
+        }
+
+        .btn-decline:hover { background: #1a1a1a; color: #f87171; }
+
+        .btn-approve { color: #4ade80; }
+        .btn-approve:hover { background: rgba(74, 222, 128, 0.06); }
+
+        /* ── Empty ── */
+        .empty {
+            text-align: center;
+            padding: 80px 20px;
+            color: #333;
+        }
+
+        .empty-icon {
+            font-size: 32px;
+            margin-bottom: 16px;
+            opacity: 0.4;
+        }
+
+        .empty h3 {
+            font-size: 14px;
+            font-weight: 500;
+            color: #444;
+        }
+
+        /* ── History ── */
+        .history-item {
+            border-bottom: 1px solid #111;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .history-item:first-child { border-top: 1px solid #111; }
+        .history-item:hover { background: #080808; }
+
+        .history-row {
+            display: grid;
+            grid-template-columns: 56px 1fr auto auto;
+            align-items: center;
+            padding: 14px 0;
+            gap: 16px;
+            font-size: 13px;
+        }
+
+        .h-time {
+            color: #444;
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            text-align: right;
+        }
+
+        .h-tool {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .h-tool-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 500;
+            color: #ddd;
+            flex-shrink: 0;
+        }
+
+        .h-tool-ws {
+            font-size: 11px;
+            color: #333;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .pill {
+            font-size: 11px;
+            font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            white-space: nowrap;
+        }
+
+        .pill-approved { color: #4ade80; background: rgba(74, 222, 128, 0.08); }
+        .pill-declined { color: #f87171; background: rgba(248, 113, 113, 0.08); }
+        .pill-timeout  { color: #fbbf24; background: rgba(251, 191, 36, 0.08); }
+        .pill-pending  { color: #555; background: #111; }
+        .pill-success  { color: #4ade80; background: rgba(74, 222, 128, 0.08); }
+        .pill-error    { color: #f87171; background: rgba(248, 113, 113, 0.08); }
+        .pill-approval_timeout { color: #fbbf24; background: rgba(251, 191, 36, 0.08); }
+
+        .history-details {
+            display: none;
+            padding: 0 0 20px;
+        }
+
+        .history-details.open { display: block; }
+
+        .history-details pre {
+            background: #0a0a0a;
+            border: 1px solid #141414;
+            border-radius: 6px;
+            padding: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #777;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin-top: 8px;
+        }
+
+        .detail-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: #444;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-top: 16px;
+        }
+
+        .detail-label:first-child { margin-top: 0; }
+
+        /* ── Workspace ── */
+        .ws-section { padding: 0; }
+
+        .ws-label {
+            font-size: 12px;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        .ws-path {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            color: #fff;
+            word-break: break-all;
+            line-height: 1.5;
+            min-height: 24px;
+        }
+
+        .ws-path.none { color: #444; font-style: italic; }
+
+        .ws-actions { margin-top: 24px; display: flex; align-items: center; gap: 16px; }
+
+        .btn-choose {
+            background: #fff;
+            color: #000;
+            border: none;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 500;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+
+        .btn-choose:hover { opacity: 0.85; }
+        .btn-choose:disabled { opacity: 0.2; cursor: not-allowed; }
+
+        .ws-warning {
+            font-size: 12px;
+            color: #f87171;
+            display: none;
+        }
+
+        .ws-warning.visible { display: block; }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #333; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <span class="logo">harness</span>
+    <div class="nav-tabs">
+        <button class="nav-tab active" data-tab="approvals">
+            Approvals
+            <span id="approvalCount" class="count">0</span>
+        </button>
+        <button class="nav-tab" data-tab="history">History</button>
+        <button class="nav-tab" data-tab="workspace">Workspace</button>
+    </div>
+</nav>
+
+<!-- Approvals -->
+<div id="approvals" class="page active">
+    <div id="approvalsList"></div>
+    <div id="approvalsEmpty" class="empty">
+        <div class="empty-icon">✓</div>
+        <h3>No pending approvals</h3>
+    </div>
+</div>
+
+<!-- History -->
+<div id="history" class="page">
+    <div id="historyList"></div>
+    <div id="historyEmpty" class="empty" style="display:none">
+        <div class="empty-icon">—</div>
+        <h3>No history yet</h3>
+    </div>
+</div>
+
+<!-- Workspace -->
+<div id="workspace" class="page">
+    <div class="ws-section">
+        <div class="ws-label">Active project</div>
+        <div id="wsPath" class="ws-path none">No workspace selected</div>
+        <div class="ws-actions">
+            <button id="chooseBtn" class="btn-choose" onclick="chooseFolder()">Choose Folder</button>
+            <span id="wsWarning" class="ws-warning">Blocked — pending approvals</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ── State ──
+    let pendingCount = 0;
+
+    // ── Helpers ──
+    function esc(s) {
+        const el = document.createElement('span');
+        el.textContent = s ?? '';
+        return el.innerHTML;
+    }
+
+    function ago(iso) {
+        if (!iso) return '—';
+        const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+        if (s < 5) return 'now';
+        if (s < 60) return s + 's';
+        const m = Math.floor(s / 60);
+        if (m < 60) return m + 'm';
+        const h = Math.floor(m / 60);
+        if (h < 24) return h + 'h';
+        const d = Math.floor(h / 24);
+        return d + 'd';
+    }
+
+    function fmtInput(tool, args) {
+        if (tool === 'edit_file' && args.old_string != null) {
+            let out = '';
+            if (args.file_path) out += '<span class="diff-file">' + esc(args.file_path) + '</span>';
+            out += '<span class="diff-del">- ' + esc(args.old_string) + '</span>\n';
+            out += '<span class="diff-add">+ ' + esc(args.new_string) + '</span>';
+            return out;
+        }
+        return esc(JSON.stringify(args, null, 2));
+    }
+
+    // ── Tabs ──
+    document.querySelectorAll('.nav-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            const tab = btn.dataset.tab;
+            document.getElementById(tab).classList.add('active');
+            if (tab === 'history') loadHistory();
+            if (tab === 'workspace') loadWorkspace();
+        });
+    });
+
+    // ── Badge ──
+    function updateBadge() {
+        const badge = document.getElementById('approvalCount');
+        const chooseBtn = document.getElementById('chooseBtn');
+        const warning = document.getElementById('wsWarning');
+        const empty = document.getElementById('approvalsEmpty');
+
+        if (pendingCount > 0) {
+            badge.textContent = pendingCount;
+            badge.classList.add('visible');
+            chooseBtn.disabled = true;
+            warning.classList.add('visible');
+            empty.style.display = 'none';
+        } else {
+            badge.classList.remove('visible');
+            chooseBtn.disabled = false;
+            warning.classList.remove('visible');
+            empty.style.display = '';
+        }
+    }
+
+    // ── API ──
+    async function api(url, opts = {}) {
+        try {
+            const r = await fetch(url, opts);
+            return await r.json();
+        } catch (e) {
+            console.error(e);
+            return null;
+        }
+    }
+
+    // ── Approvals ──
+    async function loadApprovals() {
+        const data = await api('/api/approvals');
+        if (!data) return;
+
+        const list = document.getElementById('approvalsList');
+        list.innerHTML = '';
+        pendingCount = data.length;
+
+        data.forEach(a => {
+            const el = document.createElement('div');
+            el.className = 'approval-card';
+            el.id = 'a-' + a.id;
+            el.innerHTML = `
+                <div class="card-top">
+                    <span class="card-tool">${esc(a.tool)}</span>
+                    <span class="card-ws">${esc(a.workspace)}</span>
+                </div>
+                <div class="card-body"><pre>${fmtInput(a.tool, a.arguments)}</pre></div>
+                <div class="card-actions">
+                    <button class="btn-decline" onclick="resolve('${a.id}','decline')">Decline</button>
+                    <button class="btn-approve" onclick="resolve('${a.id}','approve')">Approve</button>
+                </div>`;
+            list.appendChild(el);
+        });
+
+        updateBadge();
+    }
+
+    async function resolve(id, action) {
+        const card = document.getElementById('a-' + id);
+        if (card) {
+            card.style.opacity = '0.4';
+            card.style.pointerEvents = 'none';
+        }
+        await api(`/api/approvals/${id}/${action}`, { method: 'POST' });
+        if (card) card.remove();
+        pendingCount = Math.max(0, pendingCount - 1);
+        updateBadge();
+    }
+
+    // ── History ──
+    async function loadHistory() {
+        const data = await api('/api/history');
+        if (!data) return;
+
+        const list = document.getElementById('historyList');
+        const empty = document.getElementById('historyEmpty');
+        list.innerHTML = '';
+
+        if (!data.length) {
+            empty.style.display = '';
+            return;
+        }
+        empty.style.display = 'none';
+
+        const statusLabel = s => {
+            const map = { approval_timeout: 'timeout', success: 'success', declined: 'declined', error: 'error' };
+            return map[s] || s || '—';
+        };
+
+        data.forEach(h => {
+            const decision = (h.decision || 'pending').toLowerCase();
+            const status = (h.execution_status || '').toLowerCase();
+            const el = document.createElement('div');
+            el.className = 'history-item';
+
+            let argsDisplay = '{}';
+            try { argsDisplay = JSON.stringify(JSON.parse(h.arguments_json), null, 2); }
+            catch { argsDisplay = h.arguments_json || ''; }
+
+            el.innerHTML = `
+                <div class="history-row">
+                    <span class="h-time">${ago(h.created_at)}</span>
+                    <div class="h-tool">
+                        <span class="h-tool-name">${esc(h.tool)}</span>
+                        <span class="h-tool-ws">${esc(h.workspace)}</span>
+                    </div>
+                    <span class="pill pill-${decision}">${decision}</span>
+                    <span class="pill pill-${status || 'pending'}">${statusLabel(status)}</span>
+                </div>
+                <div class="history-details">
+                    <div class="detail-label">Arguments</div>
+                    <pre>${esc(argsDisplay)}</pre>
+                    ${h.result_summary ? `
+                        <div class="detail-label">Result</div>
+                        <pre>${esc(h.result_summary)}</pre>
+                    ` : ''}
+                </div>`;
+
+            el.querySelector('.history-row').addEventListener('click', () => {
+                el.querySelector('.history-details').classList.toggle('open');
+            });
+
+            list.appendChild(el);
+        });
+    }
+
+    // ── Workspace ──
+    async function loadWorkspace() {
+        const data = await api('/api/workspace');
+        const el = document.getElementById('wsPath');
+        if (data && data.path) {
+            el.textContent = data.path;
+            el.classList.remove('none');
+        } else {
+            el.textContent = 'No workspace selected';
+            el.classList.add('none');
+        }
+    }
+
+    async function chooseFolder() {
+        const btn = document.getElementById('chooseBtn');
+        btn.disabled = true;
+        btn.textContent = 'Opening…';
+        const data = await api('/api/workspace/choose', { method: 'POST' });
+        btn.textContent = 'Choose Folder';
+        btn.disabled = pendingCount > 0;
+        if (data && data.path) {
+            const el = document.getElementById('wsPath');
+            el.textContent = data.path;
+            el.classList.remove('none');
+        }
+    }
+
+    // ── SSE ──
+    function setupSSE() {
+        const es = new EventSource('/events');
+
+        es.addEventListener('approval_new', () => loadApprovals());
+
+        es.addEventListener('approval_resolved', () => {
+            loadApprovals();
+            if (document.getElementById('history').classList.contains('active')) loadHistory();
+        });
+
+        es.addEventListener('workspace_changed', (e) => {
+            try {
+                const d = JSON.parse(e.data);
+                const el = document.getElementById('wsPath');
+                el.textContent = d.path;
+                el.classList.remove('none');
+            } catch {}
+        });
+
+        es.onerror = () => {
+            setTimeout(() => { es.close(); setupSSE(); }, 3000);
+        };
+    }
+
+    // ── Init ──
+    loadApprovals();
+    loadWorkspace();
+    setupSSE();
+</script>
+
+</body>
+</html>
