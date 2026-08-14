@@ -1,0 +1,21 @@
+[project]
+name = "harnesslocal"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Hamza El Rachdi", email = "hamzarachidi04@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "deepagents>=0.7.6",
+    "fastapi>=0.141.1",
+    "mcp[cli]>=2.0.0",
+]
+
+[project.scripts]
+harnesslocal = "harnesslocal:main"
+
+[build-system]
+requires = ["uv_build>=0.12.1,<0.13.0"]
+build-backend = "uv_build"
