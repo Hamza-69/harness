@@ -37,6 +37,27 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="PC Harness", lifespan=lifespan)
 
 
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+BEARER_TOKEN = os.getenv("HARNESS_BEARER_TOKEN")
+
+
+@app.middleware("http")
+async def verify_bearer_token(request: Request, call_next):
+    if request.url.path.startswith("/mcp"):
+        if BEARER_TOKEN:
+            auth_header = request.headers.get("Authorization")
+            if not auth_header or auth_header != f"Bearer {BEARER_TOKEN}":
+                return JSONResponse(
+                    {"error": "unauthorized", "message": "Invalid or missing Bearer token"},
+                    status_code=401,
+                )
+    return await call_next(request)
+
+
 # Mount MCP at /mcp
 app.mount("/mcp", mcp_app)
 

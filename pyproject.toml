@@ -12,6 +12,7 @@ dependencies = [
     "deepagents>=0.7.6",
     "fastapi>=0.141.1",
     "mcp[cli]>=2.0.0",
+    "python-dotenv>=1.0.0",
     "uvicorn>=0.32.0",
 ]
 
