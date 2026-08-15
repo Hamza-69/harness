@@ -32,12 +32,17 @@ async def load_workspace() -> str | None:
         await set_workspace(path)
     return path
 
+import os
+
 def choose_folder() -> str | None:
     """Open native folder picker using zenity."""
     try:
+        env = os.environ.copy()
+        if "DISPLAY" not in env:
+            env["DISPLAY"] = ":0"
         result = subprocess.run(
             ["zenity", "--file-selection", "--directory", "--title=Choose Project Folder"],
-            capture_output=True, text=True, timeout=120
+            capture_output=True, text=True, timeout=120, env=env
         )
         if result.returncode == 0:
             return result.stdout.strip()

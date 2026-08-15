@@ -10,7 +10,9 @@ wheels/
 .venv
 
 # Local secrets & databases
-.env
+*env*
+!.env.example
+!env_example.sh
 *.db
 *.sqlite
 *.sqlite3

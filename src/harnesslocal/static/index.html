@@ -318,35 +318,84 @@
             word-break: break-all;
             line-height: 1.5;
             min-height: 24px;
+            margin-bottom: 20px;
         }
 
         .ws-path.none { color: #444; font-style: italic; }
 
-        .ws-actions { margin-top: 24px; display: flex; align-items: center; gap: 16px; }
+        .ws-input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
 
-        .btn-choose {
+        .ws-input {
+            flex: 1;
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            padding: 9px 12px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .ws-input:focus { border-color: #444; }
+        .ws-input::placeholder { color: #333; }
+        .ws-input:disabled { opacity: 0.3; }
+
+        .btn-set {
             background: #fff;
             color: #000;
             border: none;
             font-family: inherit;
             font-size: 13px;
             font-weight: 500;
-            padding: 8px 20px;
+            padding: 9px 20px;
             border-radius: 6px;
             cursor: pointer;
             transition: opacity 0.15s;
+            flex-shrink: 0;
         }
 
-        .btn-choose:hover { opacity: 0.85; }
-        .btn-choose:disabled { opacity: 0.2; cursor: not-allowed; }
+        .btn-set:hover { opacity: 0.85; }
+        .btn-set:disabled { opacity: 0.2; cursor: not-allowed; }
+
+        .btn-choose-secondary {
+            background: none;
+            color: #555;
+            border: 1px solid #222;
+            font-family: inherit;
+            font-size: 13px;
+            padding: 9px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+            flex-shrink: 0;
+        }
+
+        .btn-choose-secondary:hover { color: #999; border-color: #444; }
+        .btn-choose-secondary:disabled { opacity: 0.2; cursor: not-allowed; }
 
         .ws-warning {
             font-size: 12px;
             color: #f87171;
             display: none;
+            margin-top: 12px;
         }
 
         .ws-warning.visible { display: block; }
+
+        .ws-error {
+            font-size: 12px;
+            color: #f87171;
+            display: none;
+            margin-top: 8px;
+        }
+
+        .ws-error.visible { display: block; }
 
         /* ── Scrollbar ── */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -392,10 +441,13 @@
     <div class="ws-section">
         <div class="ws-label">Active project</div>
         <div id="wsPath" class="ws-path none">No workspace selected</div>
-        <div class="ws-actions">
-            <button id="chooseBtn" class="btn-choose" onclick="chooseFolder()">Choose Folder</button>
-            <span id="wsWarning" class="ws-warning">Blocked — pending approvals</span>
+        <div class="ws-input-row">
+            <input id="wsInput" type="text" class="ws-input" placeholder="/absolute/path/to/project" spellcheck="false" autocomplete="off">
+            <button id="setBtn" class="btn-set" onclick="setFolder()">Set</button>
+            <button id="chooseBtn" class="btn-choose-secondary" onclick="chooseFolder()">Browse…</button>
         </div>
+        <span id="wsWarning" class="ws-warning">Blocked — pending approvals</span>
+        <span id="wsError" class="ws-error"></span>
     </div>
 </div>
 
@@ -450,19 +502,25 @@
     // ── Badge ──
     function updateBadge() {
         const badge = document.getElementById('approvalCount');
+        const setBtn = document.getElementById('setBtn');
         const chooseBtn = document.getElementById('chooseBtn');
+        const wsInput = document.getElementById('wsInput');
         const warning = document.getElementById('wsWarning');
         const empty = document.getElementById('approvalsEmpty');
 
         if (pendingCount > 0) {
             badge.textContent = pendingCount;
             badge.classList.add('visible');
+            setBtn.disabled = true;
             chooseBtn.disabled = true;
+            wsInput.disabled = true;
             warning.classList.add('visible');
             empty.style.display = 'none';
         } else {
             badge.classList.remove('visible');
+            setBtn.disabled = false;
             chooseBtn.disabled = false;
+            wsInput.disabled = false;
             warning.classList.remove('visible');
             empty.style.display = '';
         }
@@ -578,6 +636,20 @@
     }
 
     // ── Workspace ──
+    function showWsError(msg) {
+        const el = document.getElementById('wsError');
+        el.textContent = msg;
+        el.classList.add('visible');
+        setTimeout(() => el.classList.remove('visible'), 4000);
+    }
+
+    function updateWsPath(path) {
+        const el = document.getElementById('wsPath');
+        el.textContent = path;
+        el.classList.remove('none');
+        document.getElementById('wsInput').value = '';
+    }
+
     async function loadWorkspace() {
         const data = await api('/api/workspace');
         const el = document.getElementById('wsPath');
@@ -590,19 +662,47 @@
         }
     }
 
+    async function setFolder() {
+        const input = document.getElementById('wsInput');
+        const path = input.value.trim();
+        if (!path) return;
+        if (!path.startsWith('/')) {
+            showWsError('Path must be absolute (start with /)');
+            return;
+        }
+        const btn = document.getElementById('setBtn');
+        btn.disabled = true;
+        const data = await api('/api/workspace', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path })
+        });
+        btn.disabled = pendingCount > 0;
+        if (data && data.path) {
+            updateWsPath(data.path);
+        } else if (data && data.error) {
+            showWsError(data.message || data.error);
+        }
+    }
+
     async function chooseFolder() {
         const btn = document.getElementById('chooseBtn');
         btn.disabled = true;
         btn.textContent = 'Opening…';
         const data = await api('/api/workspace/choose', { method: 'POST' });
-        btn.textContent = 'Choose Folder';
+        btn.textContent = 'Browse…';
         btn.disabled = pendingCount > 0;
         if (data && data.path) {
-            const el = document.getElementById('wsPath');
-            el.textContent = data.path;
-            el.classList.remove('none');
+            updateWsPath(data.path);
+        } else {
+            showWsError('No folder selected — you can type a path instead');
         }
     }
+
+    // Handle Enter key in input
+    document.getElementById('wsInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') setFolder();
+    });
 
     // ── SSE ──
     function setupSSE() {
